@@ -40,6 +40,116 @@ var fps = 0;
 var fpsCount = 0;
 var fpsTime = 0;
 
+var LAYER_COUNT = 3;
+var MAP = {tw:100, th:20};// set these to how big your map is
+var TILE = 35;
+var TILESET_TILE = 70;
+var TILESET_PADDING = 2;
+var TILESET_SPACING = 2;
+var TILESET_COUNT_X = 14;
+var TILESET_COUNT_Y = 14;
+
+var LAYER_BACKGROUND = 0;
+var LAYER_PLATFORMS = 1;
+var LAYER_LADDERS = 2;
+
+var tileset = document.createElement("img");
+tileset.src = "tileset.png";
+
+var cells = [];
+
+function initializeCollision()
+{
+	for ( var layerIdx = 0 ; layerIdx < LAYER_COUNT ; ++layerIdx )
+	{
+		cells[layerIdx] = [];
+		var idx = 0;
+		for ( var y = 0 ; y < level1.layers[layerIdx].height ; ++y)
+		{
+		cells[layerIdx][y] = [];
+		
+			for (var x = 0 ; x < level1.layers[layerIdx].width ; ++x)
+			{
+				if (level1.layers[layerIdx].data[idx] != 0 )
+				{
+					cells[layerIdx][y][x] = 1;
+					cells[layerIdx][y][x+1] = 1;
+					cells[layerIdx][y-1][x+1] = 1;
+					cells[layerIdx][y-1][x] = 1;
+				}			
+			}
+		}
+	}
+}
+				
+function cellAtPixelCoord(layer, x,y)
+	{
+		if(x<0 || x>SCREEN_WIDTH || y<0)
+		return 1;
+// let the player drop of the bottom of the screen (this means death)
+		if(y>SCREEN_HEIGHT)
+		return 0;
+		return cellAtTileCoord(layer, p2t(x), p2t(y));
+	};
+	
+function cellAtTileCoord(layer, tx, ty)
+	{
+		if(tx<0 || tx>=MAP.tw || ty<0)
+		return 1;
+// let the player drop of the bottom of the screen (this means death)
+		if(ty>=MAP.th)
+		return 0;
+		return cells[layer][ty][tx];
+	};
+function tileToPixel(tile)
+	{
+		return tile * TILE;
+	};
+function pixelToTile(pixel)
+	{
+		return Math.floor(pixel/TILE);
+	};
+function bound(value, min, max)
+	{
+		if(value < min)
+		return min;
+		if(value > max)
+		return max;
+	return value;
+}				
+				
+function drawMap()
+{
+	for(var layerIdx=0; layerIdx<LAYER_COUNT; layerIdx++)
+	{
+		var idx = 0;
+		for( var y = 0; y < level1.layers[layerIdx].height; y++ )
+		{
+			for( var x = 0; x < level1.layers[layerIdx].width; x++ )
+			{
+				if( level1.layers[layerIdx].data[idx] != 0 )
+				{
+ // the tile in the Tiled map are base 1 (meaning a value of 0 means no tile), so subtract one from the tileset id to get the
+ // correct tile
+					var tileIndex = level1.layers[layerIdx].data[idx] - 1;		
+					if( tileIndex != -1)
+					{
+						var sx = TILESET_PADDING + (tileIndex % TILESET_COUNT_X) * (TILESET_TILE + TILESET_SPACING);
+						var sy = TILESET_PADDING + (Math.floor(tileIndex / TILESET_COUNT_X)) * (TILESET_TILE + TILESET_SPACING);
+						var dx = x * TILE;
+						var dy = (y-1) * TILE;
+						
+						context.drawImage(tileset, sx, sy, TILESET_TILE, TILESET_TILE, x*TILE, (y-1)*TILE, TILESET_TILE, TILESET_TILE);
+					}
+				}
+			}
+		idx++;
+		}
+	}
+ }
+ 
+
+
 // load an image to draw
 //var chuckNorris = document.createElement("img");
 //chuckNorris.src = "hero.png";
@@ -47,6 +157,7 @@ var fpsTime = 0;
 //ADDED THESE LINES
 var keyboard = new Keyboard();
 var player = new Player();
+
 
 
 function run()
@@ -59,6 +170,8 @@ function run()
 	//context.drawImage(chuckNorris, SCREEN_WIDTH/6 - chuckNorris.width/2, SCREEN_HEIGHT/2 - chuckNorris.height/2);
 	player.update(deltaTime);
 	player.draw();
+	
+	drawMap();
 		
 	// update the frame counter 
 	fpsTime += deltaTime;
@@ -76,6 +189,37 @@ function run()
 	context.fillText("FPS: " + fps, 5, 20, 100);
 }
 
+initializeCollision();
+
+function tileToPixel(tile_coord)
+{
+	return Math.floor(pixel / TILE);
+}
+
+
+function cellAtTileCoord(layer, tx, ty)
+{
+	if( tx <0 || tx > MAP.tw || ty <0 )
+	{
+		return 1;
+	}
+	
+	if ( ty>= MAP.th )
+	{
+		return 0
+	}
+	
+	return cells[layer][ty][tx]
+	
+}
+
+function cellAtPixelCoord(layer, w, y)
+{
+	var tx = pixelToTile(x);
+	var ty = pixelToTile(y);
+	
+	return cellAtTileCoord(layer, tx, ty);
+}
 
 //-------------------- Don't modify anything below here
 

@@ -3,11 +3,6 @@ var Vector2 = function()
 	this.x = 0;
 	this.y = 0;
 }
-	
-Vector2.prototype.length = function()
-{
-	length = x*x + y*y
-}
 
 Vector2.prototype.add = function()
 {	
