@@ -100,19 +100,44 @@ Player.prototype.update = function(deltaTime)
 			this.position.x = tileToPixel(tx+1);
 			this.velocity.x = 0;
 		}
+	}	if( this.velocity.y > 0 )
+		{
+				if ( (cell_down && !cell) || (cell_diag && !cell_right && nx) )
+				{
+					this.position.y = yileToPixel(ty);
+					this.velocity.y = 0;
+				
+					cell = cell_down;
+					cell_right = cell_diag;
+					cell_down = getCellAtTileCoord(tx, ty+2);
+					cell_diag = getCellAtTileCoord(tx+1, ty+2);
+					ny = 0;
+				}
+			
+			
+			}
+
+	}
+
+	if (this.velocity.x > 0 )//if we are moving right
+	{
+		if ( (cell_right && !cell) || ( cell_diag && !cell_down && ny) )
+		{
+			this.position.x = tileToPixel(tx);
+			this.velocity,x = 0;
+		}
+	}
+	else if (this.velocity.x < 0)// if we are moving left
+	{
+		if ( (cell && !cell_right) ||(cell_down && !cell_diag && ny) )
+		{
+			this.position.x = tileToPixel(tx+1);
+			this.velocity.x = 0;
+		}
 	}
 	
 	
 
-Player.prototype.draw = function()
-{
-	context.save();
-		
-		context.translate( Vector2.x, Vector2.y );
-		context.rotate(this.rotation);
-		context.drawImage(this.image, -this.width/2, -this.height/2);
-	context.restore();
-}
 Player.prototype.draw = function()
 {
 	context.save();
