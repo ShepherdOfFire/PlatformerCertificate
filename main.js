@@ -1,6 +1,15 @@
 var canvas = document.getElementById("gameCanvas");
 var context = canvas.getContext("2d");
 
+var HUD = function()
+{
+	this.image = document.createElement("img");
+	this.image.src = "HUD!.png"
+	context.drawImage(this.image, 100, 100);
+	this.position = new Vector2();
+	this.velocity = new Vector2();
+}
+
 //setting up delta time variables
 var startFrameMillis = Date.now();
 var endFrameMillis = Date.now();
@@ -49,7 +58,7 @@ var MAP = { tw:100, th:20 };
 var TILE = 35;
 var TILESET_TILE = 70;
 var TILESET_PADDING = 2;
- var TILESET_SPACING = 2;
+var TILESET_SPACING = 2;
 var TILESET_COUNT_X = 14;
 var TILESET_COUNT_Y = 14;
 
@@ -57,17 +66,7 @@ var LAYER_BACKGROUND = 0;
 var LAYER_PLATFORMS = 1;
 var LAYER_LADDERS = 2;
 
-var LEFT = 0;
-var RIGHT = 1;
 
-var ANIM_IDLE_LEFT = 0;
-var ANIM_JUMP_LEFT = 1;0
-var ANIM_WALK_LEFT = 2;
-var ANIM_IDLE_RIGHT = 4;
-var ANIM_JUMP_RIGHT = 4;
-var ANIM_WALK_RIGHT = 5
-
-var ANIM_MAX = 6;
 
 var tileset = document.createElement("img");
 tileset.src = "tileset.png";
@@ -84,15 +83,15 @@ function initializeCollision()
 		var idx = 0;
 	
 		//loop through each row
-		for ( var y = 0 ; y < level1.layers[layerIdx].height ; ++y)
+		for ( var y = 0 ; y < Level1.layers[layerIdx].height ; ++y)
 		{
 			cells[layerIdx][y] = [];
 		
 			//loop through each cell
-			for ( var x = 0 ; x < level1.layers[layerIdx].width ; ++x)
+			for ( var x = 0 ; x < Level1.layers[layerIdx].width ; ++x)
 			{
 				//if the tile for this cell is not empty
-				if ( level1.layers[layerIdx].data[idx] != 0 )
+				if ( Level1.layers[layerIdx].data[idx] != 0 )
 				{
 					//set the 4 cells around it to be colliders
 					cells[layerIdx][y][x] = 1;
@@ -136,7 +135,7 @@ function cellAtTileCoord(layer, tx, ty)
 	if ( ty >= MAP.th )
 	{
 		return 0;
-	}
+	};
 	
 	return cells[layer][ty][tx];
 }
@@ -151,10 +150,29 @@ function cellAtPixelCoord(layer, x, y)
 
 function drawMap()
 {
-	if (typeof(level1) === "undefined" )
+	if (typeof(level2) === "undefined" )
 	{
 		alert("ADD 'level1' TO JSON FILE");
 	}
+	var startX = -1;
+	var maxTiles = Math.floor(SCREEN_WIDTH / TILE) + 2;
+	var tileX = pixelToTile(player.position.x);
+	var offsetX = TILE + Math.floor(player.position.x%TILE);
+
+	startX = tileX - Math.floor(maxTiles / 2);
+
+	 if(startX < -1)
+	 {
+		startX = 0;
+		offsetX = 0;
+	 }
+	 if(startX > MAP.tw - maxTiles)
+	 {
+		startX = MAP.tw - maxTiles + 1;
+		offsetX = TILE;
+	 }
+		worldOffsetX = startX * TILE + offsetX;
+
 
 
 	//this loops over all the layers in our tilemap
@@ -165,12 +183,12 @@ function drawMap()
 		
 		var idx = 0;
 		//look at each row
-		for (var y = 0 ; y < level1.layers[layerIdx].height ; ++y)
+		for (var y = 0 ; y < Level1.layers[layerIdx].height ; ++y)
 		{
 			//look at each tile in the row
-			for ( var x = 0 ; x < level1.layers[layerIdx].width ; ++x)
+			for ( var x = 0 ; x < Level1.layers[layerIdx].width ; ++x)
 			{
-				var tileIndex = level1.layers[layerIdx].data[idx] - 1;
+				var tileIndex = Level1.layers[layerIdx].data[idx] - 1;
 				
 				//if there's actually a tile here
 				if ( tileIndex != -1 )
@@ -191,9 +209,11 @@ function drawMap()
 					//destination y on the canvas
 					var dy = (y-1) * TILE;
 					
-					context.drawImage(tileset, sx, sy, TILESET_TILE, TILESET_TILE, 
-											   dx, dy, TILESET_TILE, TILESET_TILE);
+					context.drawImage(tileset, sx, sy, TILESET_TILE, TILESET_TILE,
+							(x-startX)*TILE - offsetX, (y-1)*TILE, TILESET_TILE, TILESET_TILE);
+
 				}
+				
 				++idx;
 			}
 		}
@@ -202,6 +222,12 @@ function drawMap()
 
 var keyboard = new Keyboard();
 var player = new Player();
+var hud = new HUD();
+
+var timer = 0;
+
+var music = new Audio("background.ogg");
+music.loop = true;
 
 function run()
 {
@@ -210,10 +236,26 @@ function run()
 	
 	var deltaTime = getDeltaTime();
 	
+	timer += deltaTime;
+	
 	drawMap();
 	
 	player.update(deltaTime);
 	player.draw();
+	
+	context.fillStyle = "black";
+	context.font = "64px MS Gothic";
+	
+	var timerSeconds = Math.floor(timer);
+	var timerMilliseconds = Math.floor((timer - timerSeconds) * 1000);
+	var textToDisplay = "Time: " + timerSeconds + ":" + timerMilliseconds;
+	context.fillText(textToDisplay, canvas.width - 1700, 60);
+	
+	if (player.health <= 0 )
+	{
+		player.position.set (16, 25);
+		player.health = 100;
+	}
 	
 	// update the frame counter 
 	fpsTime += deltaTime;
@@ -223,12 +265,16 @@ function run()
 		fpsTime -= 1;
 		fps = fpsCount;
 		fpsCount = 0;
-	}
+	}		
+	
+	music.play();
 		
 	// draw the FPS
 	context.fillStyle = "#f00";
 	context.font="14px Arial";
 	context.fillText("FPS: " + fps, 5, 20, 100);
+	
+	context.drawImage(hud.image, 0,0, 1200, 600);
 }
 
 
